@@ -32,39 +32,34 @@ client.on("ready", () => {
 client.on("messageCreate", async msg => {
     if (msg.content.startsWith("area")) {
         await db.Person.createTableIfNotPresent()
+        var args = msg.content.split(/\s+/)
 
-        /* general query */
-        if(msg.content.starts() == "area"){
-            var args = msg.content.split(/\s+/)
-
-            if(args.length <= 1){
-                db.Person.getAll().then( allTupels => {
-                    retString = "Ansprechpartner:\n\n"
-                    allTupelsSorted = {}
-                    console.log(allTupels)
-                    allTupels.forEach( el => {
-                        if(el["area"] in allTupelsSorted){
-                            allTupelsSorted[el["area"]].push(el["name"])
-                        }else{
-                            allTupelsSorted[el["area"]] = [el["name"]]
-                        }
-                    })
-                    console.log(allTupelsSorted)
-                    Object.entries(allTupelsSorted).forEach( tup => {
-                        retString += "\t" + tup[0] + ": " + tup[1].join(" ") + "\n"
-                    })
-                    msg.reply(retString)
+        if(args.length <= 1){
+            db.Person.getAll().then( allTupels => {
+                retString = "Ansprechpartner:\n\n"
+                allTupelsSorted = {}
+                console.log(allTupels)
+                allTupels.forEach( el => {
+                    if(el["area"] in allTupelsSorted){
+                        allTupelsSorted[el["area"]].push(el["name"])
+                    }else{
+                        allTupelsSorted[el["area"]] = [el["name"]]
+                    }
                 })
-            }else if(args[1] == "add" && args.length >= 4){
-                // check who submitted
-                // index 3 is area
-                // contactinate index 3 and following
-            }else if(args[1] == "delete" && args.length >= 4){
-                // check who submitted
-                // index 3 is area
-                // contactinate index 3 and following
-            }
-
+                console.log(allTupelsSorted)
+                Object.entries(allTupelsSorted).forEach( tup => {
+                    retString += "\t" + tup[0] + ": " + tup[1].join(" ") + "\n"
+                })
+                msg.reply(retString)
+            })
+        }else if(args[1] == "add" && args.length >= 4){
+            // check who submitted
+            // index 3 is area
+            // contactinate index 3 and following
+        }else if(args[1] == "delete" && args.length >= 4){
+            // check who submitted
+            // index 3 is area
+            // contactinate index 3 and following
         }else{
 
             /* specific query */
@@ -81,7 +76,6 @@ client.on("messageCreate", async msg => {
                 }
                 msg.reply(retString)
             })
-
         }
     }else if(msg.content.startsWith("protocol")){
         var args = msg.content.split(/\s+/)
@@ -110,13 +104,15 @@ client.on("messageCreate", async msg => {
         }
       
     }else if(msg.content == "event"){
-        s = await Session.GetSessionForId(msg.author.id)
+        s = null
+        await Session.GetSessionForId(msg.author.id).then( r => { s = r })
         if(!s){
             s = new db.Session(2352, 123123, "action", "start")
             s.createTableIfNotPresent().then( () => {
                 s.state = "next"
-                await s.createSessionIfNotPresent().then( () => s.save() )
-        })
+                s.createSessionIfNotPresent().then( () => s.save() )
+            })
+        }
 
         /* proceed by state */
         switch(s.action){
