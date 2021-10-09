@@ -77,7 +77,6 @@ class Session {
                     }
                 })
         })
-        //return new Session(userId, server, action, state, startTime)
     }
 
 }
