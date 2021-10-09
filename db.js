@@ -63,12 +63,18 @@ class Session {
         db.run(sql, () => resolve("Success"))
     }
 
-    static GetSession(userId, server){
-        const sql = `SELECT * FROM state WHERE userId = ? AND server = ?`
+    static GetSessionForId(userId){
+        const sql = `SELECT * FROM state WHERE userId = ?`
         return new Promise((resolve) => {
-                db.get(sql, null, (err, resultRow) => {
+                db.get(sql, [userId], (err, r) => {
                     console.log(`...found ${JSON.stringify(resultRow)}!`)
-                    resolve(resultRow)
+                    if(Object.keys(r).length == 0){
+                        resolve(null)
+                    }else{
+                        s = new Session(r["userId"], r["server"], r["action"], r["state"])
+                        s.startTime = r["startTime"]
+                        resolve(r)
+                    }
                 })
         })
         //return new Session(userId, server, action, state, startTime)
@@ -144,7 +150,6 @@ class Person {
                 })
         })
     }
-
 }
 
 // export the DB to rest of application.

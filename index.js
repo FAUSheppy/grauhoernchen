@@ -8,8 +8,21 @@ const client = new Client({
                    Intents.FLAGS.DIRECT_MESSAGES ]
     });
 
-function eventCreationSession(msg){
-    
+function eventStateMachine(msg, session){
+    switch(session.state){
+        case "start":
+            break;
+        case "wait-for-title":
+            break;
+        case "wait-for-time":
+            break;
+        case "wait-for-repeating":
+            break;
+        case "wait-for-website":
+            break;
+        case "wait-for-calendar":
+            break;
+    }
 }
 
 client.on("ready", () => {
@@ -21,25 +34,36 @@ client.on("messageCreate", async msg => {
         await db.Person.createTableIfNotPresent()
 
         /* general query */
-        if(msg.content.trim() == "area"){
+        if(msg.content.starts() == "area"){
+            var args = msg.content.split(/\s+/)
 
-            db.Person.getAll().then( allTupels => {
-                retString = "Ansprechpartner:\n\n"
-                allTupelsSorted = {}
-                console.log(allTupels)
-                allTupels.forEach( el => {
-                    if(el["area"] in allTupelsSorted){
-                        allTupelsSorted[el["area"]].push(el["name"])
-                    }else{
-                        allTupelsSorted[el["area"]] = [el["name"]]
-                    }
+            if(args.length <= 1){
+                db.Person.getAll().then( allTupels => {
+                    retString = "Ansprechpartner:\n\n"
+                    allTupelsSorted = {}
+                    console.log(allTupels)
+                    allTupels.forEach( el => {
+                        if(el["area"] in allTupelsSorted){
+                            allTupelsSorted[el["area"]].push(el["name"])
+                        }else{
+                            allTupelsSorted[el["area"]] = [el["name"]]
+                        }
+                    })
+                    console.log(allTupelsSorted)
+                    Object.entries(allTupelsSorted).forEach( tup => {
+                        retString += "\t" + tup[0] + ": " + tup[1].join(" ") + "\n"
+                    })
+                    msg.reply(retString)
                 })
-                console.log(allTupelsSorted)
-                Object.entries(allTupelsSorted).forEach( tup => {
-                    retString += "\t" + tup[0] + ": " + tup[1].join(" ") + "\n"
-                })
-                msg.reply(retString)
-            })
+            }else if(args[1] == "add" && args.length >= 4){
+                // check who submitted
+                // index 3 is area
+                // contactinate index 3 and following
+            }else if(args[1] == "delete" && args.length >= 4){
+                // check who submitted
+                // index 3 is area
+                // contactinate index 3 and following
+            }
 
         }else{
 
@@ -86,11 +110,19 @@ client.on("messageCreate", async msg => {
         }
       
     }else if(msg.content == "event"){
-        s = new db.Session(2352, 123123, "action", "start")
-        s.createTableIfNotPresent().then( () => {
-            s.state = "next"
-            s.createSessionIfNotPresent().then( () => s.save() )
+        s = await Session.GetSessionForId(msg.author.id)
+        if(!s){
+            s = new db.Session(2352, 123123, "action", "start")
+            s.createTableIfNotPresent().then( () => {
+                s.state = "next"
+                await s.createSessionIfNotPresent().then( () => s.save() )
         })
+
+        /* proceed by state */
+        switch(s.action){
+            case "event":
+                eventStateMachine(msg, s)
+        }
     }
 })
 
