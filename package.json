@@ -1,0 +1,15 @@
+{
+  "name": "grauhoernchen",
+  "version": "1.0.0",
+  "description": "Discord bot for managing events and other informational content.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yannik 'Sheppy' Schmidt",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^13.2.0",
+    "sqlite3": "^5.0.2"
+  }
+}
