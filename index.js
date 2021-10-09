@@ -47,28 +47,51 @@ client.on("messageCreate", async msg => {
             var p = new db.Person("@Sheppy", "IT", 100)
             await p.deleteEntry()
             await p.createIfNotPresent()
-            var area = msg.content.split(/area\s+/)
-            db.Person.getPersonsForArea(area[1]).then( result => {
+            var area = msg.content.split(/area\s+/)[1]
+            db.Person.getPersonsForArea(area).then( result => {
                 if(result.length == 0){
                     retString = "Keine Ansprechpartner für dieses Gebiet gefunden."
                 }else{
-                    retString = "Ansprechpartner für '" + area[1] + "' sind: "
+                    retString = "Ansprechpartner für '" + area + "' sind: "
                     result.forEach( el => retString += el["name"] + " ")
                 }
                 msg.reply(retString)
             })
 
         }
-    }else if(msg.content == ""){
+    }else if(msg.content.startsWith("protocol")){
+        var args = msg.content.split(/\s+/)
+        console.log(args)
+        if(args.length <= 1){
+            // db.Protocol.getGeneralInfo()
+        }else if(args[1] == "submit" && args.length == 3){
+            console.log(msg)
+            if(msg.attachments.size <= 0){
+                msg.reply("Submit requires attachment of protocol with the message. Abort.")
+            }else{
+                msg.reply("attachment found")
+                // check author
+                // download attachment to directory
+                // remember in database
+            }
+        }else if(args[1] == "get" && args.length == 3){
+            // query database "select filename where time like input% (aka YEAR% or YEAR-MONTH%
+            // retrieve file from directory and send
+        }else{
+            msg.reply("Help command 'protocol <action> [argument]'\n"
+                        + "protocol get YEAR[-MONTH[-DAY]]\n"
+                        + "protocol submit YEAR-MONTH-DAY -> msg must contain attachment\n"
+                        + "protocol -> show a general overview\n"
+                        + "protocol help -> show this help")
+        }
       
     }else if(msg.content == "event"){
         s = new db.Session(2352, 123123, "action", "start")
         s.createTableIfNotPresent().then( () => {
             s.state = "next"
             s.createSessionIfNotPresent().then( () => s.save() )
-                })
+        })
     }
 })
 
 client.login(process.env.TOKEN)
-
