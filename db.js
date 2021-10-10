@@ -14,19 +14,26 @@ class Session {
     save(){
         const sql = `
             UPDATE state SET
-                userId = ?
-                server = ?
-                action = ?
-                state  = ?
+                userId = ?,
+                server = ?,
+                action = ?,
+                state  = ?,
                 startTime = ?
             where
                 userId = ?
+            AND
                 server = ?
         `
         const o = this
-        return new Promise( (resolve) => {
+        return new Promise( resolve => {
+            console.log("LoLOL:", o)
             db.run(sql, [ o.userId, o.server, o.action, o.state, o.startTime,
-                          o.userId, o.startTime ], () => resolve("Success"))
+                          o.userId, o.server ], err => {
+                if(err){
+                    console.log(err)
+                }
+                resolve("Success")
+            })
         })
     }
 
@@ -36,6 +43,7 @@ class Session {
             INSERT OR IGNORE INTO state VALUES(?,?,?,?,?)
         `
         return new Promise( (resolve) => {
+            console.log("THE FUCK:", o)
             db.run(sql, [ o.userId, o.server, o.action, o.state, o.startTime ], 
                     (err) => { console.log(err); resolve(o)})
         })
@@ -44,7 +52,7 @@ class Session {
     static createTableIfNotPresent(){
         const sql = `
             CREATE TABLE IF NOT EXISTS state (
-                userId INTEGER PRIMARY KEY,
+                userId TEXT PRIMARY KEY,
                 server INTEGER,
                 action TEXT,
                 state  TEXT,
@@ -60,20 +68,29 @@ class Session {
         const sql = `
             DELETE FROM state WHERE userId = ?
         `
-        db.run(sql, [this.userId], () => resolve("Success"))
+        return new Promise( resolve => {
+            db.run(sql, [this.userId], err => {    
+                if(err){
+                    console.log(err)
+                }
+                resolve("Success")
+            })
+        })
     }
 
     static GetSessionForId(userId){
         const sql = `SELECT * FROM state WHERE userId = ?`
-        return new Promise((resolve) => {
+        return new Promise( resolve => {
+                console.log(userId)
                 db.all(sql, [userId], (err, r) => {
-                    console.log(`...found ${JSON.stringify(r)}!`)
-                    if(Object.keys(r).length == 0){
+                    if(r.length == 0){
+                        console.log("No existing Session found")
                         resolve(null)
                     }else{
-                        s = new Session(r["userId"], r["server"], r["action"], r["state"])
+                        r = r[0]
+                        var s = new Session(r["userId"], r["server"], r["action"], r["state"])
                         s.startTime = r["startTime"]
-                        resolve(r)
+                        resolve(s)
                     }
                 })
         })

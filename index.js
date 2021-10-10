@@ -8,6 +8,10 @@ const client = new Client({
                    Intents.FLAGS.DIRECT_MESSAGES ]
     });
 
+const SELF_ID = "896355509479829515"
+const ACTION_EVENT  = "event"
+const COMMAND_EVENT = "event"
+
 const ABORT              = "abort"
 const START              = "start"
 const WAIT_FOR_TITLE     = "wait-for-title"
@@ -31,6 +35,7 @@ const ENTER_CONFIRM        = "Are these information correct? Confirm with y(es) 
 const DONE                 = "Finished! Event will appear soon."
 
 function eventStateMachine(msg, session){
+    console.log("Entering state machine")
     if(msg.content == ABORT){
         msg.reply("Successfully aborted.")
         session.deleteEntry()
@@ -104,8 +109,11 @@ client.on("ready", () => {
 })
 
 client.on("messageCreate", async msg => {
-    //console.log(msg)
-    if (msg.content.startsWith("area")) {
+    if(msg.author.id == SELF_ID){
+        return
+    }
+    console.log(msg)
+    if(msg.content.startsWith("area")) {
         var args = msg.content.split(/\s+/)
 
         if(args.length <= 1){
@@ -177,20 +185,30 @@ client.on("messageCreate", async msg => {
                         + "protocol help -> show this help")
         }
       
-    }else if(msg.content == "event"){
-        s = null
+    }else if(msg.content == COMMAND_EVENT){
         await db.Session.GetSessionForId(msg.author.id).then( r => { s = r })
-        if(!s){
-            s = new db.Session(2352, 123123, "action", "start")
-            s.state  = START
-            s.action = "event"
-            await s.createSessionIfNotPresent().then( () => s.save() )
+        if(s){
+            await s.deleteEntry()
         }
+
+        console.log("Creating new session")
+        s = new db.Session(msg.author.id, 123123 , ACTION_EVENT, START)
+        await s.createSessionIfNotPresent()
+
         /* proceed by state */
         switch(s.action){
-            case "event":
+            case ACTION_EVENT:
                 eventStateMachine(msg, s)
         }
+    }else{
+        db.Session.GetSessionForId(msg.author.id).then( existingSession => { 
+            console.log(existingSession)
+            if(existingSession){
+                if(existingSession.action == ACTION_EVENT){
+                    eventStateMachine(msg, existingSession)
+                }
+            }
+        })
     }
 })
 
