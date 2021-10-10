@@ -41,7 +41,7 @@ class Session {
         })
     }
 
-    createTableIfNotPresent(){
+    static createTableIfNotPresent(){
         const sql = `
             CREATE TABLE IF NOT EXISTS state (
                 userId INTEGER PRIMARY KEY,
@@ -66,8 +66,8 @@ class Session {
     static GetSessionForId(userId){
         const sql = `SELECT * FROM state WHERE userId = ?`
         return new Promise((resolve) => {
-                db.get(sql, [userId], (err, r) => {
-                    console.log(`...found ${JSON.stringify(resultRow)}!`)
+                db.all(sql, [userId], (err, r) => {
+                    console.log(`...found ${JSON.stringify(r)}!`)
                     if(Object.keys(r).length == 0){
                         resolve(null)
                     }else{
@@ -160,7 +160,7 @@ class Event {
 
     static createTableIfNotPresent(){
         const sql = `
-            CREATE TABLE IF NOT EXISTS person (
+            CREATE TABLE IF NOT EXISTS events (
                 authorId INTEGER PRIMARY KEY,
                 authorName TEXT,
                 uid TEXT,
@@ -198,6 +198,15 @@ class Event {
         })
     }
 
+    static deleteEntryById(authorId){
+        const sql = `
+            DELETE from events WHERE authorId = ?
+        `
+        return new Promise( resolve => {
+                db.run(sql, [authorId ], () => resolve("Success"))
+        })
+    }
+
     static getEventInEdit(authorId){
         if(authorId < 0){
             return new Promise( resolve => resolve(null))
@@ -215,6 +224,6 @@ class Event {
 // export the DB to rest of application.
 module.exports = {  db : db, 
                     Session : Session,
-                    Person  : Person
+                    Person  : Person,
                     Event  : Event
                  }

@@ -36,15 +36,18 @@ function eventStateMachine(msg, session){
         session.deleteEntry()
     }
 
-    eventInEdit = db.Event.getUnfinishedEvent(msg.author.id)
-    if(!eventInEdit && not session.state == START){
+    eventInEdit = db.Event.getEventInEdit(msg.author.id)
+    console.log(session)
+    if(!eventInEdit && !session.state == START){
         console.log("WTF, no eventInEdit but not session state start")
     }
     switch(session.state){
         case START:
-            msg.reply(MSG_START_EVENT_SESSION)
-            msg.reply(ENTER_TITLE_TEXT)
-            db.Event.createEvent(msg.author.id)
+            msg.author.send(MSG_START_EVENT_SESSION)
+            msg.author.send(ENTER_TITLE_TEXT)
+            db.Event.deleteEntryById(msg.author.id)
+            eventEntry = new db.Event(msg.author.id)
+            eventEntry.createIfNotPresent()
             session.state = WAIT_FOR_TITLE
             session.save()
             break
@@ -95,11 +98,14 @@ function eventStateMachine(msg, session){
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`)
+  db.Session.createTableIfNotPresent()
+  db.Person.createTableIfNotPresent()
+  db.Event.createTableIfNotPresent()
 })
 
 client.on("messageCreate", async msg => {
+    //console.log(msg)
     if (msg.content.startsWith("area")) {
-        await db.Person.createTableIfNotPresent()
         var args = msg.content.split(/\s+/)
 
         if(args.length <= 1){
@@ -173,15 +179,13 @@ client.on("messageCreate", async msg => {
       
     }else if(msg.content == "event"){
         s = null
-        await Session.GetSessionForId(msg.author.id).then( r => { s = r })
+        await db.Session.GetSessionForId(msg.author.id).then( r => { s = r })
         if(!s){
             s = new db.Session(2352, 123123, "action", "start")
-            s.createTableIfNotPresent().then( () => {
-                s.state = "next"
-                s.createSessionIfNotPresent().then( () => s.save() )
-            })
+            s.state  = START
+            s.action = "event"
+            await s.createSessionIfNotPresent().then( () => s.save() )
         }
-
         /* proceed by state */
         switch(s.action){
             case "event":
