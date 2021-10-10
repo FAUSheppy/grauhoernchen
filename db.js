@@ -56,11 +56,11 @@ class Session {
         )
     }
 
-    deleteSession(userId, server){
+    deleteEntry(){
         const sql = `
-            DELETE state WHERE userId = ? AND server = ?
+            DELETE FROM state WHERE userId = ?
         `
-        db.run(sql, () => resolve("Success"))
+        db.run(sql, [this.userId], () => resolve("Success"))
     }
 
     static GetSessionForId(userId){

@@ -8,20 +8,88 @@ const client = new Client({
                    Intents.FLAGS.DIRECT_MESSAGES ]
     });
 
+const ABORT              = "abort"
+const START              = "start"
+const WAIT_FOR_TITLE     = "wait-for-title"
+const WAIT_FOR_TIME      = "wait-for-time"
+const WAIT_FOR_DURATION  = "wait-for-duration"
+const WAIT_FOR_REPEATING = "wait-for-repeating"
+const WAIT_FOR_WEBSITE   = "wait-for-website"
+const WAIT_FOR_CALENDAR  = "wait-for-calendar"
+const WAIT_FOR_CONFIRM   = "wait-for-confirm"
+
+const MSG_START_EVENT_SESSION = "You may abort this session with 'abort'"
+                                + " or get help for each individual step with 'help'"
+const ENTER_TITLE_TEXT     = "Enter Title for event (max. 25 characters)"
+const ENTER_TIME_TEXT      = "Enter Time for event to start at."
+const ENTER_DURATION_TEXT  = "Enter Duration for event"
+const ENTER_REPEATING_TEXT = "Is this event repeating?\n"
+                                + "Enter m(onth), y(ear), d(aily), w(eekly) or n(o)."
+const ENTER_WEBSITE_TEXT   = "Should this event be display on the website as news?"
+const ENTER_CALENDAR_TEXT  = "Should this event be noted in the ESE calendar?"
+const ENTER_CONFIRM        = "Are these information correct? Confirm with y(es) or abort with n(o)"
+const DONE                 = "Finished! Event will appear soon."
+
 function eventStateMachine(msg, session){
+    if(msg.content == ABORT){
+        msg.reply("Successfully aborted.")
+        session.deleteEntry()
+    }
+
+    eventInEdit = db.Event.getUnfinishedEvent(msg.author.id)
+    if(!eventInEdit && not session.state == START){
+        console.log("WTF, no eventInEdit but not session state start")
+    }
     switch(session.state){
-        case "start":
-            break;
-        case "wait-for-title":
-            break;
-        case "wait-for-time":
-            break;
-        case "wait-for-repeating":
-            break;
-        case "wait-for-website":
-            break;
-        case "wait-for-calendar":
-            break;
+        case START:
+            msg.reply(MSG_START_EVENT_SESSION)
+            msg.reply(ENTER_TITLE_TEXT)
+            db.Event.createEvent(msg.author.id)
+            session.state = WAIT_FOR_TITLE
+            session.save()
+            break
+        case WAIT_FOR_TITLE:
+            msg.reply(ENTER_TIME_TEXT)
+            db.Event.getEvent(msg.author.id)
+            session.state = WAIT_FOR_TIME
+            session.save()
+            break
+        case WAIT_FOR_TIME:
+            msg.reply(ENTER_DURATION_TEXT)
+            db.Event.getEvent(msg.author.id)
+            session.state = WAIT_FOR_TIME
+            session.save()
+            break
+        case WAIT_FOR_DURATION:
+            msg.reply(ENTER_REPEATING_TEXT)
+            db.Event.getEvent(msg.author.id)
+            session.state = WAIT_FOR_TIME
+            session.save()
+            break
+        case WAIT_FOR_REPEATING:
+            msg.reply(ENTER_WEBSITE_TEXT)
+            db.Event.getEvent(msg.author.id)
+            session.state = WAIT_FOR_TIME
+            session.save()
+            break
+        case WAIT_FOR_WEBSITE:
+            msg.reply(ENTER_CALENDAR_TEXT)
+            db.Event.getEvent(msg.author.id)
+            session.state = WAIT_FOR_TIME
+            session.save()
+            break
+        case WAIT_FOR_CALENDAR:
+            msg.reply(ENTER_CONFIRM)
+            db.Event.getEvent(msg.author.id)
+            session.state = WAIT_FOR_TIME
+            session.save()
+            break
+        case WAIT_FOR_CONFIRM:
+            msg.reply(DONE)
+            calendar.transmitEvent(calEvent)
+            calEvent.deleteEntry()
+            session.deleteEntry()
+            break
     }
 }
 
