@@ -151,8 +151,70 @@ class Person {
     }
 }
 
+class Event {
+    constructor(author){
+        this.authorId = author.id // set to -1 after edit is finished
+        this.authorName = author.name
+        this.uid      = "TODO UID"
+    }
+
+    static createTableIfNotPresent(){
+        const sql = `
+            CREATE TABLE IF NOT EXISTS person (
+                authorId INTEGER PRIMARY KEY,
+                authorName TEXT,
+                uid TEXT,
+                title TEXT,
+                content TEXT,
+                startTime INTEGER,
+                durationSeconds INTEGER,
+                repeatingMode TEXT,
+                addToCal INTEGER,
+                addToWebsite INTEGER
+            )
+        `
+        return new Promise(resolve =>
+          db.run(sql, (err) => { console.log(err); resolve("Success")})
+        )
+    }
+
+    createIfNotPresent(){
+        const o = this
+        const sql = `
+            INSERT INTO events (authorId, authorName, uid) VALUES(?,?,?)
+        `
+        return new Promise( (resolve) => {
+            db.run(sql, [ o.authorId, o.authorName, o.uid ], 
+                    (err) => { console.log(err); resolve(o) })
+        })
+    }
+
+    deleteEntry(){
+        const sql = `
+            DELETE from events WHERE authorId = ?
+        `
+        return new Promise( resolve => {
+                db.run(sql, [this.authorId ], () => resolve("Success"))
+        })
+    }
+
+    static getEventInEdit(authorId){
+        if(authorId < 0){
+            return new Promise( resolve => resolve(null))
+        }
+        const sql = `SELECT * FROM events WHERE authorId = ?`
+        return new Promise( resolve => {
+                db.all(sql, [authorId], (err, resultRow) => {
+                    console.log(err)
+                    resolve(resultRow)
+                })
+        })
+    }
+}
+
 // export the DB to rest of application.
 module.exports = {  db : db, 
                     Session : Session,
                     Person  : Person
+                    Event  : Event
                  }
