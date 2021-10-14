@@ -1,7 +1,7 @@
 # Commands
 
-    !help                               Show a general help
-    !event                              Create a new event (bot will message you with instructions)
+    !help                                Show a general help
+    !event                               Create a new event (bot will message you with instructions)
     
     !protocol                            Show a general protocol overview
     !protocol get    YEAR[-MONTH[-DAY]]  Find a protocol based on date
