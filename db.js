@@ -26,7 +26,6 @@ class Session {
         `
         const o = this
         return new Promise( resolve => {
-            console.log("LoLOL:", o)
             db.run(sql, [ o.userId, o.server, o.action, o.state, o.startTime,
                           o.userId, o.server ], err => {
                 if(err){
@@ -170,9 +169,22 @@ class Person {
 
 class Event {
     constructor(author){
-        this.authorId = author.id // set to -1 after edit is finished
-        this.authorName = author.name
-        this.uid      = "TODO UID"
+        if(author){
+            this.authorId       = author.id /* set to -1 after edit is finished */
+            this.authorName     = author.name
+        }else{
+            this.authorId = -1
+            this.author   = "invalid_author"
+        }
+        this.uid            = "7389457606463456" // TODO
+        this.title          = ""
+        this.content        = ""
+        this.startTime      = Math.floor(new Date().getTime() / 1000);
+        this.addToCal       = 0
+        this.addToWebsite   = 0
+        this.duration       = -1
+        this.repeatingType  = ""
+        this.inEditOrReview = 0
     }
 
     static createTableIfNotPresent(){
@@ -187,7 +199,8 @@ class Event {
                 durationSeconds INTEGER,
                 repeatingMode TEXT,
                 addToCal INTEGER,
-                addToWebsite INTEGER
+                addToWebsite INTEGER,
+                inEditOrReview INTEGER
             )
         `
         return new Promise(resolve =>
@@ -203,6 +216,36 @@ class Event {
         return new Promise( (resolve) => {
             db.run(sql, [ o.authorId, o.authorName, o.uid ], 
                     (err) => { console.log(err); resolve(o) })
+        })
+    }
+
+    save(){
+        const sql = `
+            UPDATE events SET
+                authorId = ?,
+                authorName = ?,
+                uid = ?,
+                title  = ?,
+                content = ?,
+                startTime = ?,
+                durationSeconds = ?,
+                repeatingMode = ?,
+                addToCal = ?,
+                addToWebsite = ?,
+                inEditOrReview = ?
+            where
+                authorId = ?
+        `
+        const o = this
+        return new Promise( resolve => {
+            db.run(sql, [ o.authorId, o.authorName, o.uid, o.title, o.content,
+                          o.startTime, o.durationSeconds, o.repeatingMode,
+                          o.addToCal, o.addToWebsite ], err => {
+                if(err){
+                    console.log(err)
+                }
+                resolve("Success")
+            })
         })
     }
 
@@ -230,12 +273,30 @@ class Event {
         }
         const sql = `SELECT * FROM events WHERE authorId = ?`
         return new Promise( resolve => {
-                db.all(sql, [authorId], (err, resultRow) => {
-                    console.log(err)
-                    resolve(resultRow)
+                db.all(sql, [authorId], (err, r) => {
+                    if(r.length == 0){
+                        console.log("No existing Event found")
+                        resolve(null)
+                    }else{
+                        r = r[0]
+                        var e = new Event()
+                        e.authorId       = r["authorId"]
+                        e.authorName     = r["authorName"]
+                        e.uid            = r["uid"]
+                        e.title          = r["title"]
+                        e.content        = r["content"]
+                        e.startTime      = r["startTime"]
+                        e.addToCal       = r["addToCal"]
+                        e.addToWebsite   = r["addToWebsite"]
+                        e.duration       = r["durationSeconds"]
+                        e.repeatingType  = r["repeatingType"]
+                        e.inEditOrReview = r["inEditOrReview"]
+                        resolve(e)
+                    }
                 })
         })
     }
+
 }
 
 // export the DB to rest of application.

@@ -1,5 +1,6 @@
 const { Client, Intents } = require('discord.js');
 const db = require("./db.js")
+const calendar = require("./calendar.js")
 
 const client = new Client({ 
         partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
@@ -15,6 +16,7 @@ const COMMAND_EVENT = "event"
 const ABORT              = "abort"
 const START              = "start"
 const WAIT_FOR_TITLE     = "wait-for-title"
+const WAIT_FOR_CONTENT   = "wait-for-content"
 const WAIT_FOR_TIME      = "wait-for-time"
 const WAIT_FOR_DURATION  = "wait-for-duration"
 const WAIT_FOR_REPEATING = "wait-for-repeating"
@@ -25,6 +27,7 @@ const WAIT_FOR_CONFIRM   = "wait-for-confirm"
 const MSG_START_EVENT_SESSION = "You may abort this session with 'abort'"
                                 + " or get help for each individual step with 'help'"
 const ENTER_TITLE_TEXT     = "Enter Title for event (max. 25 characters)"
+const ENTER_CONTENT_TEXT   = "Enter Content for event"
 const ENTER_TIME_TEXT      = "Enter Time for event to start at."
 const ENTER_DURATION_TEXT  = "Enter Duration for event"
 const ENTER_REPEATING_TEXT = "Is this event repeating?\n"
@@ -34,62 +37,79 @@ const ENTER_CALENDAR_TEXT  = "Should this event be noted in the ESE calendar?"
 const ENTER_CONFIRM        = "Are these information correct? Confirm with y(es) or abort with n(o)"
 const DONE                 = "Finished! Event will appear soon."
 
-function eventStateMachine(msg, session){
+async function eventStateMachine(msg, session){
     console.log("Entering state machine")
     if(msg.content == ABORT){
         msg.reply("Successfully aborted.")
         session.deleteEntry()
     }
 
-    eventInEdit = db.Event.getEventInEdit(msg.author.id)
-    console.log(session)
-    if(!eventInEdit && !session.state == START){
-        console.log("WTF, no eventInEdit but not session state start")
-    }
+    var e = null;
+    await db.Event.getEventInEdit(msg.author.id).then( eventFromDb => {
+        if(!eventFromDb && !session.state == START){
+            console.log("WTF, no eventInEdit but not session state start")
+        }else{
+            e = eventFromDb
+        }
+    })
+
     switch(session.state){
         case START:
             msg.author.send(MSG_START_EVENT_SESSION)
             msg.author.send(ENTER_TITLE_TEXT)
             db.Event.deleteEntryById(msg.author.id)
-            eventEntry = new db.Event(msg.author.id)
+            eventEntry = new db.Event(msg.author)
             eventEntry.createIfNotPresent()
             session.state = WAIT_FOR_TITLE
             session.save()
             break
         case WAIT_FOR_TITLE:
+            msg.reply(ENTER_CONTENT_TEXT)
+            e.title = msg.content
+            e.save()
+            session.state = WAIT_FOR_CONTENT
+            session.save()
+            break
+        case WAIT_FOR_CONTENT:
             msg.reply(ENTER_TIME_TEXT)
-            db.Event.getEvent(msg.author.id)
+            e.title = msg.content
+            e.save()
             session.state = WAIT_FOR_TIME
             session.save()
             break
         case WAIT_FOR_TIME:
             msg.reply(ENTER_DURATION_TEXT)
-            db.Event.getEvent(msg.author.id)
-            session.state = WAIT_FOR_TIME
+            e.startTime = msg.content
+            e.save()
+            session.state = WAIT_FOR_DURATION
             session.save()
             break
         case WAIT_FOR_DURATION:
             msg.reply(ENTER_REPEATING_TEXT)
-            db.Event.getEvent(msg.author.id)
-            session.state = WAIT_FOR_TIME
+            e.duration = parseInt(msg.content)
+            e.save()
+            session.state = WAIT_FOR_REPEATING
             session.save()
             break
         case WAIT_FOR_REPEATING:
             msg.reply(ENTER_WEBSITE_TEXT)
-            db.Event.getEvent(msg.author.id)
-            session.state = WAIT_FOR_TIME
+            e.repeatingType = msg.content
+            e.save()
+            session.state = WAIT_FOR_WEBSITE
             session.save()
             break
         case WAIT_FOR_WEBSITE:
             msg.reply(ENTER_CALENDAR_TEXT)
-            db.Event.getEvent(msg.author.id)
-            session.state = WAIT_FOR_TIME
+            e.addToWebsite = parseInt(msg.content) // TODO check if one or zero
+            e.save()
+            session.state = WAIT_FOR_CALENDAR
             session.save()
             break
         case WAIT_FOR_CALENDAR:
             msg.reply(ENTER_CONFIRM)
-            db.Event.getEvent(msg.author.id)
-            session.state = WAIT_FOR_TIME
+            e.addToCal = parseInt(msg.content)
+            e.save()
+            session.state = WAIT_FOR_CONFIRM
             session.save()
             break
         case WAIT_FOR_CONFIRM:
@@ -112,7 +132,7 @@ client.on("messageCreate", async msg => {
     if(msg.author.id == SELF_ID){
         return
     }
-    console.log(msg)
+    //console.log(msg)
     if(msg.content.startsWith("area")) {
         var args = msg.content.split(/\s+/)
 

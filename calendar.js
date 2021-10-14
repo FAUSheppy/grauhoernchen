@@ -1,18 +1,20 @@
 var options = {
     rejectUnauthorized: false,
-    hostname          : host,
-    port              : port,
-    path              : path,
+    hostname          : "atlantishq.de",
+    port              : 80,
+    path              : "/",
     method            : 'PUT',
     headers           : {
       "Content-type"  : "text/calendar",
-      "Content-Length": body.length,
+      "Content-Length": 1000, //body.length,
       "User-Agent"    : "calDavClient",
       "Connection"    : "close",
       "Depth"         : "1"
     }
 };
 
+var user = ""
+var pass = ""
 var userpass = new Buffer(user + ":" + pass).toString('base64');
 options.headers["Authorization"] = "Basic " + userpass;
 
@@ -28,26 +30,26 @@ const event = {
     organizer: { name: 'Admin', email: 'Race@BolderBOULDER.com' },
 }
 
-var responseString = ""
-var req = https.request(options, res => {
-    res.on('data', function (chunk) {
-        responseString += chunk;
+function transmittEvent(){
+
+    var responseString = ""
+    var req = https.request(options, res => {
+        res.on('data', function (chunk) {
+            responseString += chunk;
+        });
+    
+        req.on('close', function () {
+            console.log(req)
+        });
     });
-
-    req.on('close', function () {
-        console.log(req)
+    
+    req.on('error', function (e) {
+        console.log('problem with request: ' + e.message);
     });
-});
-
-req.on('error', function (e) {
-    console.log('problem with request: ' + e.message);
-});
-
-
-req.write(body);
-req.end()
-
-function addEvent(){
+    
+    
+    req.write(body);
+    req.end()
 
 }
 
@@ -59,6 +61,6 @@ function eventsInRange(start, end){
 
 }
 
-function deleteEventByUID(eventUID){
+function deleteEventByUID(eventUid){
 
 }
