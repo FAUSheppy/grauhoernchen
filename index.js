@@ -37,10 +37,16 @@ const ENTER_CALENDAR_TEXT  = "Should this event be noted in the ESE calendar?"
 const ENTER_CONFIRM        = "Are these information correct? Confirm with y(es) or abort with n(o)"
 const DONE                 = "Finished! Event will appear soon."
 
+function stateMachineReply(msg, text, e){
+    if(!e.inEditOrReview){
+        msg.author.send(text)
+    }
+}
+
 async function eventStateMachine(msg, session){
     console.log("Entering state machine")
     if(msg.content == ABORT){
-        msg.reply("Successfully aborted.")
+        msg.author.send("Successfully aborted.")
         session.deleteEntry()
     }
 
@@ -50,6 +56,7 @@ async function eventStateMachine(msg, session){
             console.log("WTF, no eventInEdit but not session state start")
         }else{
             e = eventFromDb
+            // TODO in edit or review
         }
     })
 
@@ -64,58 +71,59 @@ async function eventStateMachine(msg, session){
             session.save()
             break
         case WAIT_FOR_TITLE:
-            msg.reply(ENTER_CONTENT_TEXT)
+            stateMachineReply(msg, ENTER_CONTENT_TEXT, e)
             e.title = msg.content
             e.save()
             session.state = WAIT_FOR_CONTENT
             session.save()
             break
         case WAIT_FOR_CONTENT:
-            msg.reply(ENTER_TIME_TEXT)
+            stateMachineReply(msg, ENTER_TIME_TEXT, e)
             e.title = msg.content
             e.save()
             session.state = WAIT_FOR_TIME
             session.save()
             break
         case WAIT_FOR_TIME:
-            msg.reply(ENTER_DURATION_TEXT)
+            stateMachineReply(msg, ENTER_DURATION_TEXT, e)
             e.startTime = msg.content
             e.save()
             session.state = WAIT_FOR_DURATION
             session.save()
             break
         case WAIT_FOR_DURATION:
-            msg.reply(ENTER_REPEATING_TEXT)
+            stateMachineReply(msg, ENTER_REPEATING_TEXT, e)
             e.duration = parseInt(msg.content)
             e.save()
             session.state = WAIT_FOR_REPEATING
             session.save()
             break
         case WAIT_FOR_REPEATING:
-            msg.reply(ENTER_WEBSITE_TEXT)
+            stateMachineReply(msg, ENTER_WEBSITE_TEXT, e)
             e.repeatingType = msg.content
             e.save()
             session.state = WAIT_FOR_WEBSITE
             session.save()
             break
         case WAIT_FOR_WEBSITE:
-            msg.reply(ENTER_CALENDAR_TEXT)
+            stateMachineReply(msg, ENTER_CALENDAR_TEXT, e)
             e.addToWebsite = parseInt(msg.content) // TODO check if one or zero
             e.save()
             session.state = WAIT_FOR_CALENDAR
             session.save()
             break
         case WAIT_FOR_CALENDAR:
-            msg.reply(ENTER_CONFIRM)
+            stateMachineReply(msg, ENTER_CONFIRM, e)
             e.addToCal = parseInt(msg.content)
             e.save()
             session.state = WAIT_FOR_CONFIRM
             session.save()
             break
         case WAIT_FOR_CONFIRM:
-            msg.reply(DONE)
+            stateMachineReply(msg, DONE, e)
             calendar.transmitEvent(calEvent)
-            calEvent.deleteEntry()
+            // TODO write out to channel
+            calEvent.authorId = -1
             session.deleteEntry()
             break
     }
